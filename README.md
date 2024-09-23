@@ -115,17 +115,8 @@ Accepts an image file and runs the YOLO model on it. The response is the image a
 
 The project includes a `docker-compose.yml` file to simplify container management. The service defined is:
 
-- **app**: The FastAPI server running the YOLO model.
+- **model-server**: The FastAPI server running the YOLO model.
 
 Docker Compose will manage this service and ensure that it is running on port `8000`.
 
 You can manage this service using the `just` tasks as described in the sections above.
-
-## Python Requirements
-
-The Python dependencies are listed in the `requirements.txt` file. The main dependencies are:
-
-- `fastapi`: FastAPI framework for building the web server.
-- `uvicorn`: ASGI server for FastAPI.
-- `opencv-python-headless`: OpenCV for image processing without GUI functionality.
-- `ultralytics`: YOLO model package.
