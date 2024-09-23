@@ -4,6 +4,7 @@ from ultralytics import YOLO
 
 import cv2
 import numpy as np
+from io import BytesIO
 
 app = FastAPI()
 
@@ -16,8 +17,18 @@ async def run_model(file: UploadFile = File(...)):
     np_img = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
+    # Run YOLO model inference
     results = model(img)
-    return StreamingResponse(results[0], media_type="image/jpeg")
+
+    # Annotate the image with the detection results (bounding boxes, etc.)
+    annotated_img = results[0].plot()
+
+    # Convert the annotated image to JPEG
+    _, img_encoded = cv2.imencode(".jpg", annotated_img)
+    img_bytes = BytesIO(img_encoded.tobytes())
+
+    # Return the image as a streaming response
+    return StreamingResponse(img_bytes, media_type="image/jpeg")
 
 
 @app.get("/")
