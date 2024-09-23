@@ -13,7 +13,7 @@ This project sets up a FastAPI server that runs a YOLO (You Only Look Once) mode
 │   ├── src
 │   │   ├── __init__.py
 │   │   └── main.py   # FastAPI server
-│   ├── model.pt      # YOLO model file
+│   │   └── model.pt      # YOLO model file
 │   ├── Dockerfile    # Dockerfile for the FastAPI server
 │   ├── requirements.txt # Python dependencies
 │   └── .dockerignore # Docker ignore file
