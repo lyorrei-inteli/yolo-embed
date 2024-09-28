@@ -1,122 +1,232 @@
-### `README.md`
+# YOLO Model Server and ESP32-CAM Integration
 
-# YOLO Model Server
-
-This project sets up a FastAPI server that runs a YOLO (You Only Look Once) model for object detection on uploaded images. The server processes images by running the YOLO model, annotates them with bounding boxes, and returns the resulting image.
+This project includes two components:
+1. A FastAPI server that runs a YOLO model for object detection on uploaded images.
+2. An ESP32-CAM that captures images and sends them to the server for processing.
 
 ## Project Structure
 
 ```
 /project-root
 │
-├── model-server
+├── model-server                 # YOLO model server (FastAPI)
 │   ├── src
 │   │   ├── __init__.py
-│   │   └── main.py   # FastAPI server
-│   │   └── model.pt      # YOLO model file
-│   ├── Dockerfile    # Dockerfile for the FastAPI server
-│   ├── requirements.txt # Python dependencies
-│   └── .dockerignore # Docker ignore file
-├── docker-compose.yml # Docker Compose configuration
-└── Justfile           # Justfile for managing Docker containers easily
+│   │   └── main.py              # FastAPI server
+│   │   └── model.pt             # YOLO model file
+│   ├── Dockerfile               # Dockerfile for the FastAPI server
+│   ├── requirements.txt         # Python dependencies
+│   └── .dockerignore            # Docker ignore file
+│
+├── esp-cam                      # Embedded code for ESP32-CAM (PlatformIO)
+│   ├── src
+│   │   └── main.cpp             # ESP32-CAM source code (image capture and POST request)
+│   ├── platformio.ini           # PlatformIO configuration file
+│   └── include                  # Additional header files
+│
+├── docker-compose.yml           # Docker Compose configuration
+├── Justfile                     # Justfile for managing Docker containers easily
+└── README.md                    # Project documentation
 ```
 
 ## Running the Model Server
 
 Once you have cloned the repository, follow these steps to manage and run the server:
 
-### 1. Bring up the containers
+### Using Justfile
 
-You can easily bring up the containers by running:
+This project includes a **Justfile** to simplify Docker management commands. Below are the Justfile tasks and what they do:
+
+1. **Bringing up the containers**:
+   - This task builds and starts the Docker containers in the background.
+   
+   ```bash
+   just up
+   ```
+   Equivalent to:
+   ```bash
+   docker-compose up --build -d
+   ```
+
+2. **Stopping the containers**:
+   - This task stops all running Docker containers.
+   
+   ```bash
+   just down
+   ```
+   Equivalent to:
+   ```bash
+   docker-compose down
+   ```
+
+3. **Restarting the containers**:
+   - This task stops and restarts the containers, rebuilding if necessary.
+   
+   ```bash
+   just restart
+   ```
+   Equivalent to:
+   ```bash
+   docker-compose down && docker-compose up --build -d
+   ```
+
+4. **Viewing the logs**:
+   - This task shows real-time logs from the running containers.
+   
+   ```bash
+   just logs
+   ```
+   Equivalent to:
+   ```bash
+   docker-compose logs -f
+   ```
+
+5. **Accessing the container shell**:
+   - You can open a shell in a specific container (default is `model-server`).
+   
+   ```bash
+   just shell
+   ```
+   This opens a shell in the `model-server` container, but you can specify another container:
+   ```bash
+   just shell container=<container_name>
+   ```
+
+6. **Checking container status**:
+   - This task checks the current status of the containers.
+   
+   ```bash
+   just status
+   ```
+   Equivalent to:
+   ```bash
+   docker-compose ps
+   ```
+
+7. **Cleaning up containers, volumes, and networks**:
+   - This task removes all containers, volumes, and networks associated with the project, including images.
+   
+   ```bash
+   just clean
+   ```
+   Equivalent to:
+   ```bash
+   docker-compose down -v --rmi all --remove-orphans
+   ```
+
+### Modifying WiFi Credentials and API Endpoint for ESP32-CAM
+
+Before uploading the code to your ESP32-CAM, you need to change the WiFi credentials and the YOLO model server's IP address in the `main.cpp` file.
+
+1. **Set your WiFi credentials**:
+   - In the `main.cpp` file, update the `ssid` and `password` variables to match your network:
+   
+   ```cpp
+   const char* ssid = "YourNetworkSSID";
+   const char* password = "YourNetworkPassword";
+   ```
+
+2. **Update the API endpoint**:
+   - Modify the `apiEndpoint` variable to the IP address where your YOLO model server is running. This address should match the server's local network IP:
+   
+   ```cpp
+   String apiEndpoint = "http://<YOUR_SERVER_IP>:8000/run-model";
+   ```
+
+### Uploading Code to ESP32-CAM
+
+To upload the code to your ESP32-CAM, follow these steps:
+
+1. **Connect the ESP32-CAM to your computer** using a USB-to-serial adapter.
+2. **Open PlatformIO** in your IDE (VSCode or other).
+3. **Select the `esp32cam` environment** from the available environments.
+4. Click on **Upload** to flash the code to the ESP32-CAM.
+
+Alternatively, you can use the command line:
 
 ```bash
-just up
+platformio run --target upload
 ```
 
-This command will build the Docker image (if necessary) and start the FastAPI server on port `8000`.
+### Running the ESP32-CAM
 
-### 2. Stop the containers
+Once the code is uploaded:
+1. **Power up the ESP32-CAM**.
+2. It will automatically connect to the specified WiFi network.
+3. The camera will capture an image every 5 seconds (or based on your configuration) and send it to the YOLO model server running at the specified IP address.
 
-To stop the containers, run:
+### Troubleshooting
+
+- If the ESP32-CAM doesn't connect to WiFi, double-check the SSID and password in `main.cpp`.
+- Make sure the YOLO model server is running and accessible at the specified IP and port (e.g., `http://192.168.99.135:8000/run-model`).
+- Use PlatformIO’s Serial Monitor to debug issues:
 
 ```bash
-just down
+platformio device monitor
 ```
 
-This will gracefully stop and remove the containers.
+### API Endpoints
 
-### 3. Restart the containers
+The FastAPI server provides the following endpoints to interact with the YOLO model.
 
-To restart the containers (rebuilding if needed), use:
+1. **`GET /`**
+   - This is a simple endpoint that returns a welcome message and instructions for using the YOLO model server.
 
-```bash
-just restart
-```
+   **Response:**
+   ```json
+   {
+     "message": "Send an image to the /run-model endpoint"
+   }
+   ```
 
-### 4. Check logs
+2. **`POST /run-model`**
+   - This is the primary endpoint that accepts an image, runs the YOLO model on it, and returns an image annotated with detected objects and bounding boxes.
 
-To follow the logs from the running containers:
+   **Request:**
+   - You need to send an image (in formats such as JPEG, PNG, etc.) to this endpoint using a `POST` request. The image is processed, and the result is returned as an annotated image with detected objects.
 
-```bash
-just logs
-```
+   **Response:**
+   - An annotated image (JPEG) with bounding boxes marking detected objects.
 
-### 5. Access the shell of the container
+   **Example:**
+   ```bash
+   curl -X POST "http://<YOUR_SERVER_IP>:8000/run-model" \
+   -H "accept: image/jpeg" \
+   -H "Content-Type: image/jpeg" \
+   --data-binary @your-image-file.jpg
+   ```
 
-If you need to access a shell inside the running `app` container:
+### Saving Input and Output Images
 
-```bash
-just shell
-```
+The FastAPI server saves both the **input image** (the image sent from the ESP32-CAM) and the **output image** (the image annotated by the YOLO model with detection results). The images are saved in the `saved_images` directory.
 
-### 6. Check the status of the containers
+1. **Input Image**:
+   - The raw image captured by the ESP32-CAM and sent to the server is saved with a timestamp in the filename.
+   - The input image is stored in the following path:
+     ```
+     /model-server/saved_images/input_image_<timestamp>.jpg
+     ```
 
-To verify the status of your containers:
+2. **Output Image**:
+   - After the YOLO model processes the input image and annotates it with bounding boxes around detected objects, the annotated image is saved with a timestamp.
+   - The output image is stored in the following path:
+     ```
+     /model-server/saved_images/output_image_<timestamp>.jpg
+     ```
 
-```bash
-just status
-```
+### Example
 
-### 7. Clean up the environment
+If an image is received at `12:34:56` on September 28, 2024, both images will be saved as:
 
-To remove all containers, images, volumes, and networks related to this project:
+- Input image: `input_image_20240928_123456.jpg`
+- Output image: `output_image_20240928_123456.jpg`
 
-```bash
-just clean
-```
+These images can be found in the `saved_images` directory inside the `model-server` folder.
 
-## API Endpoints
-
-### `GET /`
-
-Returns a welcome message and instructions for submitting an image.
-
-#### Response
-
-```json
-{
-  "message": "Send an image to the /run-model endpoint"
-}
-```
-
-### `POST /run-model`
-
-Accepts an image file and runs the YOLO model on it. The response is the image annotated with detection results.
-
-#### Request
-
-- File: An image (JPEG, PNG, etc.)
-
-#### Response
-
-- An image with detected objects and bounding boxes.
-
-## Docker Compose
-
-The project includes a `docker-compose.yml` file to simplify container management. The service defined is:
-
-- **model-server**: The FastAPI server running the YOLO model.
-
-Docker Compose will manage this service and ensure that it is running on port `8000`.
-
-You can manage this service using the `just` tasks as described in the sections above.
+### Key Additions:
+1. **Justfile Documentation**:
+   - Detailed documentation for each task in the Justfile, explaining what it does and how to use it.
+   - Commands for container management (start, stop, restart, logs, status, clean).
+   
+2. **Instructions for Modifying `main.cpp`**:
+   - Clear instructions for the user to change WiFi credentials and the YOLO model server IP address in the `main.cpp` file.
