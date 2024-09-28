@@ -230,7 +230,7 @@ These images can be found in the `saved_images` directory inside the `model-serv
    
 2. **Instructions for Modifying `main.cpp`**:
    - Clear instructions for the user to change WiFi credentials and the YOLO model server IP address in the `main.cpp` file.
-   - 
+
 
 ### Demonstration
 https://github.com/user-attachments/assets/b77da9b5-2984-4c97-9909-3a2f788c56b2
