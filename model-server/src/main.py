@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse
 from ultralytics import YOLO
 import cv2
 import numpy as np
@@ -53,7 +53,7 @@ async def run_model(request: Request):
     print(f"Output image saved at: {output_image_path}")
 
     # Return the annotated image as a streaming response
-    return StreamingResponse(img_bytes, media_type="image/jpeg")
+    return FileResponse(output_image_path, media_type="image/jpeg")
 
 @app.get("/")
 def read_root():
