@@ -251,4 +251,6 @@ Estas imagens podem ser encontradas no diretório `saved_images` dentro da pasta
 https://github.com/user-attachments/assets/b77da9b5-2984-4c97-9909-3a2f788c56b2
 
 #### Ponderada 3
+https://github.com/user-attachments/assets/3eec5256-9286-45c4-a3f0-535c3d29831a
+
 
